@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Poker Counter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>AR Poker Counter</h1>
+    <p>Welcome to the AR Poker Counter project! This project is designed to help poker players keep track of their chips and bets using augmented reality technology. With this tool, you can easily visualize your chip stack and make informed decisions during the game.</p>
+    
+    <h2>Features</h2>
+    <ul>
+        <li>Real-time chip counting using AR technology</li>
+        <li>Visual representation of chip stacks</li>
+        <li>Easy-to-use interface for tracking bets and wins</li>
+        <li>Compatibility with various poker games</li>
+    </ul>
+
+    <h2>Getting Started</h2>
+    <p>To get started with the AR Poker Counter, follow these steps:</p>
+    <ol>
+        <li>Download and install the AR Poker Counter app on your device.</li>
+        <li>Set up your poker table and ensure good lighting for optimal AR performance.</li>
+        <li>Open the app and point your device's camera at your chip stack.</li>
+        <li>The app will automatically detect and count your chips, displaying the total value on the screen.</li>
+        <li>You can also use the app to track bets and wins throughout the game.</li>
+    </ol>
+
+    <h2>Contact Us</h2>
+    <p>If you have any questions or feedback about the AR Poker Counter, please feel free to contact us at noahhigpen@gmail.com</p>
+
+    <video id="video" autoplay="true"></video>
+    <script>
+        var video = document.querySelector("#video");
+
+        if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+            video.srcObject = stream;
+            })
+            .catch(function (err0r) {
+            console.log("Something went wrong!");
+            });
+        }
+    </script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.0.0/aframe/build/aframe-ar-nft.js"></script>
+</body>
+</html>
