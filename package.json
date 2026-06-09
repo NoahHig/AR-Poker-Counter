@@ -1,0 +1,31 @@
+{
+  "dependencies": {
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
+  },
+  "name": "ar-poker-counter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon backend/server.js",
+    "start": "node backend/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NoahHig/AR-Poker-Counter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/NoahHig/AR-Poker-Counter/issues"
+  },
+  "homepage": "https://github.com/NoahHig/AR-Poker-Counter#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
