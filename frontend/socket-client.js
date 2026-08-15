@@ -1,27 +1,42 @@
-import { io } from 'socket.io-client';
-
 const socket = io('http://localhost:3000');
 
-const roomCodeInput = document.querySelector('#roomCode');
-const playerNameInput = document.querySelector('#playerName');
-const joinBtn = document.querySelector('#joinBtn');
-const addChipsBtn = document.querySelector('#addChipsBtn');
-const statusEl = document.querySelector('#status');
+const appState = {
+  roomCode: null,
+  playerName: '',
+  chips: 0,
+  chipsByPlayerId: {},
+  visibleMarkerId: null,
+  connected: false
+};
 
-const express = require("express");
-const app = express();
-const port = 3000;
-
-app.listen(port);
-app.set("view engine", "ejs");
+const roomCodeInput = document.getElementById('roomCode');
+const playerNameInput = document.getElementById('playerName');
+const joinBtn = document.getElementById('joinBtn');
+const addChipsBtn = document.getElementById('addChipsBtn');
+const statusEl = document.getElementById('status');
+const raiseBtn = document.getElementById('raiseBtn');
+const foldBtn = document.getElementById('foldBtn');
+const checkBtn = document.getElementById('checkBtn');
 
 joinBtn.addEventListener('click', () => {
   const roomCode = roomCodeInput.value.trim().toUpperCase();
   const playerName = playerNameInput.value.trim() || 'Player';
-
+  console.log(`Joining game with code: ${roomCode} and name: ${playerName}`);
   socket.emit('join-game', {
     roomCode,
     playerName
+  }, message => {
+    console.log('Join game response:', message);
+    if (!message.success) {
+      statusEl.textContent = `Failed to join game: ${message.message}`;
+      return;
+    }
+    appState.roomCode = roomCode;
+    appState.playerName = message.playerName;
+    appState.chips = message.chips;
+    appState.connected = true;
+    statusEl.textContent = `Joined ${roomCode} as ${message.playerName}`;
+    document.querySelector('#chipCount').textContent = `Chips: ${message.chips}`;
   });
 });
 
@@ -33,24 +48,42 @@ addChipsBtn.addEventListener('click', () => {
   });
 });
 
+raiseBtn.addEventListener('click', () => {
+  // Implement raise logic here
+  socket.emit('raise', {
+    roomCode: appState.roomCode,
+    amount: 10
+  });
+  console.log('Raise button clicked');
+});
+
+foldBtn.addEventListener('click', () => {
+  // Implement fold logic here
+  socket.emit('fold', {
+    roomCode: appState.roomCode
+  });
+  console.log('Fold button clicked');
+});
+
+checkBtn.addEventListener('click', () => {
+  // Implement check logic here
+  socket.emit('check', {
+    roomCode: appState.roomCode
+  });
+  console.log('Check button clicked');
+});
+
 socket.on('connection', () => {
   console.log('Client connected');
   statusEl.textContent = 'Socket connected';
 });
 
 socket.on('joined-game', (payload) => {
-  statusEl.textContent = `Joined ${payload.roomCode} as ${payload.playerName}`;
-  window.appState.chips = payload.chips;
-  document.querySelector('#chipCount').textContent = `Chips: ${payload.chips}`;
-  document.querySelector('#markerText').setAttribute('value', `Chips: ${payload.chips}`);
+  statusEl.textContent = `${payload.playerName} has joined the game!`;
 });
 
 socket.on('chip-update', (payload) => {
-  window.appState.chips = payload.chips;
+  appState.chips = payload.chips;
   document.querySelector('#chipCount').textContent = `Chips: ${payload.chips}`;
   document.querySelector('#markerText').setAttribute('value', `Chips: ${payload.chips}`);
-});
-
-app.get("/poker", (req, res) => {
-  res.render("index");
 });

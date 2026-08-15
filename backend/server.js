@@ -45,8 +45,10 @@ function createGame(roomCode, playerName) {
     lastRaised: 0
   };
 
+  console.log(`Creating game with code: ${game.roomCode} and lead player: ${playerName}`);
   games.set(roomCode, game);
-  return game;
+  console.log(`returning ${game.roomCode} and lead player: ${leadPlayer.name}`);
+  return {game, player: leadPlayer};
 }
 
 function joinGame(roomCode, playerName) {
@@ -71,12 +73,12 @@ function joinGame(roomCode, playerName) {
     } else {
       existingPlayer.connected = true;
       game.players[game.players.indexOf(existingPlayer)] = existingPlayer;
-      return game;
+      return {game, player: existingPlayer};
     }
   }
 
   game.players.push(player);
-  return game;
+  return {game, player};
 }
 
 function startHand(game) {
@@ -171,24 +173,55 @@ function allIn(game, playerName) {
   return true;
 }
 
+function runGameLoop() {
+  while (game.round < 4) {
+    const currentPlayer = game.players[game.turn];
+    if (currentPlayer.folded || currentPlayer.allIn) {
+      game.turn = (game.turn + 1) % game.players.length;
+      continue;
+    }
+
+    // Wait for player action (fold, call, raise, all-in)
+    // This would typically be handled via socket events in a real implementation
+
+    // For demonstration, we'll just move to the next player
+    game.turn = (game.turn + 1) % game.players.length;
+
+    if (game.turn === game.lastRaised) {
+      nextRound(game);
+    }
+
+    // Check if all players have acted and if the round should end
+    const activePlayers = game.players.filter(p => !p.folded && !p.allIn);
+    if (activePlayers.length <= 1) {
+      break; // End the round if only one player is left
+    }
+  }
+}
+
 io.on('connection', (socket) => {
   console.log('a user connected');
 
-  socket.on('join-game', ({ roomCode, playerName }) => {
+  socket.on('join-game', ({ roomCode, playerName }, callback) => {
+    console.log(`Join game request: ${roomCode} as ${playerName}`);
     let game = games.get(roomCode);
     if (!game) {
-      game = createGame(roomCode, playerName);
+      console.log(`Creating new game with code: ${roomCode}`);
+      result = createGame(roomCode, playerName);
     } else {
-      game = joinGame(roomCode, playerName);
+      result = joinGame(roomCode, playerName);
     }
 
-    if (game) {
+    if (result.game) {
       socket.join(roomCode);
-      io.to(roomCode).emit('joined-game', {
-        roomCode: game.roomCode,
-        playerName,
-        chips: game.players.find(p => p.name === playerName).chips
+      socket.broadcast.to(roomCode).emit('joined-game', {
+        roomCode: result.game.roomCode,
+        playerName: result.player.name,
+        chips: result.player.chips
       });
+      if (callback) callback({ success: true, playerName: result.player.name, chips: result.player.chips });
+    } else {
+      if (callback) callback({ success: false, message: 'Failed to join game' });
     }
   });
 
