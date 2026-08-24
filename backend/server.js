@@ -19,24 +19,24 @@ app.get('/', (_req, res) => {
   res.sendFile(join(__dirname, '../frontend/index.html'));
 });
 
-const games = new Map();
+const lobbies = new Map();
 
-function createGame(roomCode, playerName) {
-  if (games.has(roomCode)) return null;
+function createLobby(roomCode, playerName) {
+  if (lobbies.has(roomCode)) return null;
 
-  const leadPlayer = {
-    name: playerName,
+  const hostPlayer = {
+    playerName: playerName,
     chips: 100,
-    leader: true,
+    isHost: true,
     connected: true,
     folded: false,
     allIn: false,
     bet: 0
   };
 
-  const game = {
+  const lobby = {
     roomCode,
-    players: [leadPlayer],
+    players: [hostPlayer],
     round: 1,
     pot: 0,
     bet: 0,
@@ -45,63 +45,63 @@ function createGame(roomCode, playerName) {
     lastRaised: 0
   };
 
-  console.log(`Creating game with code: ${game.roomCode} and lead player: ${playerName}`);
-  games.set(roomCode, game);
-  console.log(`returning ${game.roomCode} and lead player: ${leadPlayer.name}`);
-  return {game, player: leadPlayer};
+  console.log(`Creating lobby with code: ${lobby.roomCode} and host player: ${playerName}`);
+  lobbies.set(roomCode, lobby);
+  console.log(`returning ${lobby.roomCode} and host player: ${hostPlayer.playerName}`);
+  return {lobby, player: hostPlayer, isHost: true};
 }
 
-function joinGame(roomCode, playerName) {
-  console.log(`Joining game ${roomCode} as ${playerName}`);
-  const game = games.get(roomCode);
-  if (!game) return null;
+function joinLobby(roomCode, playerName) {
+  console.log(`Joining lobby ${roomCode} as ${playerName}`);
+  const lobby = lobbies.get(roomCode);
+  if (!lobby) return null;
 
   const player = {
-    name: playerName,
+    playerName: playerName,
     chips: 100,
-    leader: false,
+    isHost: false,
     connected: true,
     folded: false,
     allIn: false,
     bet: 0
   };
 
-  const existingPlayer = game.players.find(p => p.name === playerName);
+  const existingPlayer = lobby.players.find(p => p.name === playerName);
   if (existingPlayer) {
     if (existingPlayer.connected) {
-      player.name = `${playerName}_${Math.floor(Math.random() * 1000)}`;
+      player.playerName = `${playerName}_${Math.floor(Math.random() * 1000)}`;
     } else {
       existingPlayer.connected = true;
-      game.players[game.players.indexOf(existingPlayer)] = existingPlayer;
-      return {game, player: existingPlayer};
+      lobby.players[lobby.players.indexOf(existingPlayer)] = existingPlayer;
+      return {lobby, player: existingPlayer, isHost: false};
     }
   }
 
-  game.players.push(player);
-  return {game, player};
+  lobby.players.push(player);
+  return {lobby, player, isHost: false};
 }
 
-function startHand(game) {
-  game.round = 1;
-  game.pot = 0;
-  game.bet = 0;
-  game.turn = (game.button + 1) % game.players.length;
-  game.lastRaised = game.turn;
+function startHand(lobby) {
+  lobby.round = 1;
+  lobby.pot = 0;
+  lobby.bet = 0;
+  lobby.turn = (lobby.button + 1) % lobby.players.length;
+  lobby.lastRaised = lobby.turn;
 }
 
-function nextRound(game) {
-  game.round++;
-  game.bet = 0;
-  game.turn = (game.button + 1) % game.players.length;
-  game.lastRaised = game.turn;
-  if (game.round > 4) {
-    const winnerName = determineWinner(game);
-    endHand(game, winnerName);
+function nextRound(lobby) {
+  lobby.round++;
+  lobby.bet = 0;
+  lobby.turn = (lobby.button + 1) % lobby.players.length;
+  lobby.lastRaised = lobby.turn;
+  if (lobby.round > 4) {
+    const winnerName = determineWinner(lobby);
+    endHand(lobby, winnerName);
   }
 }
 
-function determineWinner(game) {
-  const activePlayers = game.players.filter(p => !p.folded);
+function determineWinner(lobby) {
+  const activePlayers = lobby.players.filter(p => !p.folded);
   if (activePlayers.length === 1) {
     return activePlayers[0].name;
   }
@@ -109,75 +109,75 @@ function determineWinner(game) {
   return activePlayers[Math.floor(Math.random() * activePlayers.length)].name;
 }
 
-function endHand(game, playerName) {
-  const player = game.players.find(p => p.name === playerName);
+function endHand(lobby, playerName) {
+  const player = lobby.players.find(p => p.name === playerName);
   if (player) {
-    player.chips += game.pot;
+    player.chips += lobby.pot;
   }
 
-  game.round = 0;
-  game.pot = 0;
-  game.bet = 0;
-  game.turn = 0;
-  game.lastRaised = 0;
-  game.players.forEach(p => {
+  lobby.round = 0;
+  lobby.pot = 0;
+  lobby.bet = 0;
+  lobby.turn = 0;
+  lobby.lastRaised = 0;
+  lobby.players.forEach(p => {
     p.bet = 0;
     p.folded = false;
     p.allIn = false;
   });
-  game.button = (game.button + 1) % game.players.length;
+  lobby.button = (lobby.button + 1) % lobby.players.length;
 }
 
-function fold(game, playerName) {
-  const player = game.players.find(p => p.name === playerName);
+function fold(lobby, playerName) {
+  const player = lobby.players.find(p => p.name === playerName);
   
-  if(!player || game.indexOf(player) !== game.turn) return false;
+  if(!player || lobby.indexOf(player) !== lobby.turn) return false;
 
   player.folded = true;
   return true;
 }
 
-function raise(game, playerName, amount) {
-  const player = game.players.find(p => p.name === playerName);
+function raise(lobby, playerName, amount) {
+  const player = lobby.players.find(p => p.name === playerName);
 
-  if(game.indexOf(player) !== game.turn) return false;
+  if(lobby.indexOf(player) !== lobby.turn) return false;
 
-  const contribution = game.bet - player.bet + amount;
+  const contribution = lobby.bet - player.bet + amount;
   if (!player || player.chips < contribution) return false;
 
-  game.bet += amount;
-  player.bet = game.bet;
+  lobby.bet += amount;
+  player.bet = lobby.bet;
   player.chips -= contribution;
-  game.pot += contribution;
-  game.lastRaised = game.turn;
+  lobby.pot += contribution;
+  lobby.lastRaised = lobby.turn;
   return true;
 }
 
-function call(game, playerName) {
-  raise(game, playerName, 0);
+function call(lobby, playerName) {
+  raise(lobby, playerName, 0);
 }
 
-function allIn(game, playerName) {
-  const player = game.players.find(p => p.name === playerName);
-  if (!player || game.indexOf(player) !== game.turn) return false;
+function allIn(lobby, playerName) {
+  const player = lobby.players.find(p => p.name === playerName);
+  if (!player || lobby.indexOf(player) !== lobby.turn) return false;
 
   const contribution = player.chips;
-  if (player.bet + contribution > game.bet) {
-    game.bet = player.bet + contribution;
+  if (player.bet + contribution > lobby.bet) {
+    lobby.bet = player.bet + contribution;
   }
-  game.pot += contribution;
+  lobby.pot += contribution;
   player.bet += contribution;
   player.chips = 0;
   player.allIn = true;
-  game.lastRaised = game.turn;
+  lobby.lastRaised = lobby.turn;
   return true;
 }
 
 function runGameLoop() {
-  while (game.round < 4) {
-    const currentPlayer = game.players[game.turn];
+  while (lobby.round < 4) {
+    const currentPlayer = lobby.players[lobby.turn];
     if (currentPlayer.folded || currentPlayer.allIn) {
-      game.turn = (game.turn + 1) % game.players.length;
+      lobby.turn = (lobby.turn + 1) % lobby.players.length;
       continue;
     }
 
@@ -185,14 +185,14 @@ function runGameLoop() {
     // This would typically be handled via socket events in a real implementation
 
     // For demonstration, we'll just move to the next player
-    game.turn = (game.turn + 1) % game.players.length;
+    lobby.turn = (lobby.turn + 1) % lobby.players.length;
 
-    if (game.turn === game.lastRaised) {
-      nextRound(game);
+    if (lobby.turn === lobby.lastRaised) {
+      nextRound(lobby);
     }
 
     // Check if all players have acted and if the round should end
-    const activePlayers = game.players.filter(p => !p.folded && !p.allIn);
+    const activePlayers = lobby.players.filter(p => !p.folded && !p.allIn);
     if (activePlayers.length <= 1) {
       break; // End the round if only one player is left
     }
@@ -202,34 +202,35 @@ function runGameLoop() {
 io.on('connection', (socket) => {
   console.log('a user connected');
 
-  socket.on('join-game', ({ roomCode, playerName }, callback) => {
-    console.log(`Join game request: ${roomCode} as ${playerName}`);
-    let game = games.get(roomCode);
-    if (!game) {
-      console.log(`Creating new game with code: ${roomCode}`);
-      result = createGame(roomCode, playerName);
+  socket.on('join-lobby', ({ roomCode, playerName }, callback) => {
+    console.log(`Join lobby request: ${roomCode} as ${playerName}`);
+    let lobby = lobbies.get(roomCode);
+    if (!lobby) {
+      console.log(`Creating new lobby with code: ${roomCode}`);
+      result = createLobby(roomCode, playerName);
     } else {
-      result = joinGame(roomCode, playerName);
+      result = joinLobby(roomCode, playerName);
     }
 
-    if (result.game) {
+    if (result.lobby) {
       socket.join(roomCode);
-      socket.broadcast.to(roomCode).emit('joined-game', {
-        roomCode: result.game.roomCode,
-        playerName: result.player.name,
+      socket.broadcast.to(roomCode).emit('joined-lobby', {
+        roomCode: result.lobby.roomCode,
+        playerName: result.player.playerName,
         chips: result.player.chips
       });
-      if (callback) callback({ success: true, playerName: result.player.name, chips: result.player.chips });
+      console.log(`lobby ${result.lobby.roomCode} has players: ${result.lobby.players.map(p => p.playerName).join(', ')}`);
+      if (callback) callback({ success: true, player: result.player, lobby: result.lobby });
     } else {
-      if (callback) callback({ success: false, message: 'Failed to join game' });
+      if (callback) callback({ success: false, message: 'Failed to join lobby' });
     }
   });
 
   socket.on('add-chips', ({ roomCode, amount }) => {
-    const game = games.get(roomCode);
-    if (!game) return;
+    const lobby = lobbies.get(roomCode);
+    if (!lobby) return;
 
-    const player = game.players.find(p => p.name === socket.id);
+    const player = lobby.players.find(p => p.name === socket.id);
     if (!player) return;
 
     player.chips += amount;
@@ -241,16 +242,30 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
-    games.forEach(game => {
-      const player = game.players.find(p => p.name === socket.id);
+    lobbies.forEach(lobby => {
+      const player = lobby.players.find(p => p.name === socket.id);
       if (player) {
         player.connected = false;
-        io.to(game.roomCode).emit('player-disconnected', {
+        io.to(lobby.roomCode).emit('player-disconnected', {
           playerName: player.name
         });
       }
     });
   });
+
+  socket.on('start-hand', ({ roomCode }) => {
+    const lobby = lobbies.get(roomCode);
+    if (!lobby) return;
+    startHand(lobby);
+    io.to(roomCode).emit('start-hand', {
+      round: lobby.round,
+      pot: lobby.pot,
+      bet: lobby.bet,
+      turn: lobby.turn,
+      button: lobby.button,
+      lastRaised: lobby.lastRaised
+    });
+  })
 });
 
 app.get('/', (_req, res) => {
