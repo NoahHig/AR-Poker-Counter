@@ -113,6 +113,11 @@ socket.on('connection', () => {
 });
 
 socket.on('joined-lobby', (payload) => {
+  window.dispatchEvent(
+    new CustomEvent('joined-lobby', {
+      detail: payload
+    })
+  )
   // statusEl.textContent = `${payload.playerName} has joined the lobby!`;
 });
 

@@ -35,11 +35,14 @@ export function mountLobbyView({
     }
   })
 
-  socket.on('joined-lobby', (payload) => {
-    statusEl.textContent = `${payload.playerName} has joined the lobby!`;
-    statusEl.style.color = 'green';
-    playerList.innerHTML += `<li>${payload.playerName} - Chips: ${payload.chips}</li>`;
-  });
+  window.addEventListener(
+    'joined-lobby',
+    (event) => {
+        statusEl.textContent = `${event.detail.playerName} has joined the lobby!`;
+        statusEl.style.color = 'green';
+        playerList.innerHTML += `<li>${event.detail.playerName} - Chips: ${event.detail.chips}</li>`;  
+    }
+  )
 
   return {
     unmount() {
