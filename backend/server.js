@@ -226,7 +226,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('add-chips', ({ roomCode, amount }) => {
+  socket.on('add-chips', ({ roomCode, amount }, callback) => {
     const lobby = lobbies.get(roomCode);
     if (!lobby) return;
 
@@ -253,7 +253,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('start-hand', ({ roomCode }) => {
+  socket.on('start-hand', ({ roomCode }, callback) => {
     const lobby = lobbies.get(roomCode);
     if (!lobby) return;
     startHand(lobby);
@@ -265,6 +265,7 @@ io.on('connection', (socket) => {
       button: lobby.button,
       lastRaised: lobby.lastRaised
     });
+    if(callback) callback({ success: true });
   })
 });
 

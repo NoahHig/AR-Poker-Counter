@@ -1,10 +1,11 @@
+import { appState } from '../state.js';
+
 export function mountGameplayView({
   root,
-  onCreateGame,
-  onJoinGame
+  onAction
 }) {
   const controller = new AbortController();
-
+  console.log('Mounting gameplay view');
   root.innerHTML = `
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.0.0/aframe/build/aframe-ar.js"></script>
@@ -18,9 +19,7 @@ export function mountGameplayView({
     </a-scene>
 
     <div class="hud">
-        <input id="roomCode" placeholder="Game code" />
-        <input id="playerName" placeholder="Player name" />
-        <button id="joinBtn">Join game</button>
+        <input id="quantityInput" placeholder="Quantity" type="number">
         <button id="addChipsBtn">+10 chips</button>
         <button id="raiseBtn">Raise</button>
         <button id="foldBtn">Fold</button>
@@ -29,43 +28,61 @@ export function mountGameplayView({
         <div id="chipCount">Chips: --</div>
     </div>
   `;
-  const joinBtn = document.getElementById('joinBtn');
+  const quantityInput = document.getElementById('quantityInput');
   const addChipsBtn = document.getElementById('addChipsBtn');
   const raiseBtn = document.getElementById('raiseBtn');
   const foldBtn = document.getElementById('foldBtn');
   const checkBtn = document.getElementById('checkBtn');
   const statusEl = document.getElementById('status');
 
+  addChipsBtn.addEventListener('click', () => {
+    const quantity = parseInt(quantityInput.value, 10) || 0;
+    quantityInput.value = quantity + 10;
+  })
+
   raiseBtn.addEventListener('click', () => {
     // Implement raise logic here
-    socket.emit('raise', {
-      roomCode: appState.roomCode,
-      amount: 10
-    });
+    const quantity = parseInt(quantityInput.value, 10) || 0;
+    onAction({ action: 'raise', roomCode: appState.roomCode, amount: quantity, playerName: appState.playerName });
+    // socket.emit('raise', {
+    //   roomCode: appState.roomCode,
+    //   amount: 10
+    // });
     console.log('Raise button clicked');
   });
 
   foldBtn.addEventListener('click', () => {
     // Implement fold logic here
-    socket.emit('fold', {
-      roomCode: appState.roomCode
-    });
+    onAction({ action: 'fold', roomCode: appState.roomCode, amount: 0, playerName: appState.playerName });
+    // socket.emit('fold', {
+    //   roomCode: appState.roomCode
+    // });
     console.log('Fold button clicked');
   });
 
   checkBtn.addEventListener('click', () => {
     // Implement check logic here
-    socket.emit('check', {
-      roomCode: appState.roomCode
-    });
+    const quantity = parseInt(quantityInput.value, 10) || 0
+    onAction({ action: 'check', roomCode: appState.roomCode, amount: 0, playerName: appState.playerName });
+    // socket.emit('check', {
+    //   roomCode: appState.roomCode
+    // });
     console.log('Check button clicked');
   });
 
-  socket.on('chip-update', (payload) => {
-    appState.chips = payload.chips;
-    document.querySelector('#chipCount').textContent = `Chips: ${payload.chips}`;
-    document.querySelector('#markerText').setAttribute('value', `Chips: ${payload.chips}`);
-  });
+  window.addEventListener(
+    'chip-update',
+    (event) => {
+        appState.chips = event.detail.chips;
+        document.querySelector('#chipCount').textContent = `Chips: ${event.detail.chips}`;
+        document.querySelector('#markerText').setAttribute('value', `Chips: ${event.detail.chips}`);
+    })
+
+//   socket.on('chip-update', (payload) => {
+//     appState.chips = payload.chips;
+//     document.querySelector('#chipCount').textContent = `Chips: ${payload.chips}`;
+//     document.querySelector('#markerText').setAttribute('value', `Chips: ${payload.chips}`);
+//   });
 
   return {
     unmount() {

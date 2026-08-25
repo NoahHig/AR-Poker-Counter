@@ -1,4 +1,3 @@
-import { socket } from '../socket-client.js';
 import { appState } from '../state.js';
 
 console.log('Mounting menu view');

@@ -121,6 +121,14 @@ socket.on('joined-lobby', (payload) => {
   // statusEl.textContent = `${payload.playerName} has joined the lobby!`;
 });
 
+socket.on('chip-update', (payload) => {
+  window.dispatchEvent(
+    new CustomEvent('chip-update', {
+      detail: payload
+    })
+  )
+})
+
 // socket.on('chip-update', (payload) => {
 //   appState.chips = payload.chips;
 //   document.querySelector('#chipCount').textContent = `Chips: ${payload.chips}`;

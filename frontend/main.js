@@ -1,6 +1,7 @@
 console.log('Mounting main.js');
 import { mountMenuView } from './views/menu-view.js';
 import { mountLobbyView } from './views/lobby-view.js';
+import { mountGameplayView } from './views/gameplay-view.js';
 import { socket } from './socket-client.js';
 import { appState } from './state.js';
 
@@ -88,8 +89,10 @@ function showMenu() {
 function showLobby() {
   console.log('Next: mount the lobby view', appState.roomCode);
     activeView?.unmount();
+
     activeView = mountLobbyView({
       root,
+
       onStartGame: ({ roomCode }) => {
         console.log(`Starting game in room: ${roomCode}`);
         return new Promise((resolve, reject) => {
@@ -109,6 +112,19 @@ function showLobby() {
       });
     }
   });
+}
+
+function showGameplay() {
+    console.log('Next: mount the gameplay view', appState.roomCode);
+    activeView?.unmount();
+
+    activeView = mountGameplayView({
+        root,
+
+        onAction: ({ action, roomCode, amount, playerName }) => {
+            console.log(`Player ${playerName} performed action: ${action} with amount: ${amount}`);
+        }
+    });
 }
 
 showMenu();
