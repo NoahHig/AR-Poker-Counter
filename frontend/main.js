@@ -25,10 +25,10 @@ function showMenu() {
               return;
             }
 
-            appState.playerId = response.playerId;
-            appState.playerName = response.playerName;
-            appState.roomCode = response.roomCode;
-            appState.players = response.players;
+            appState.session.playerId = response.playerId;
+            appState.session.playerName = response.playerName;
+            appState.session.roomCode = response.roomCode;
+            appState.game.playersById = response.playersById;
 
             showLobby();
             resolve();
@@ -47,13 +47,20 @@ function showMenu() {
         if (!message.success) {
             return;
         }
-        console.log(`players: ${message.lobby.players.map(p => p.playerName).join(', ')}`);
-        appState.roomCode = roomCode;
-        appState.playerName = message.player.playerName;
-        appState.players = message.lobby.players;
-        appState.chips = message.player.chips;
-        appState.connected = true;
-        appState.isHost = message.player.isHost;
+        console.log(`players: ${message.lobby.players.map(player => player.playerName).join(', ')}`);
+        appState.session.roomCode = roomCode;
+        appState.session.playerName = message.player.playerName;
+        appState.session.playerId = message.player.playerId;
+        appState.session.isHost = message.player.isHost;
+        appState.game.playerIds = message.lobby.playerIds;
+        appState.game.roomCode = message.lobby.roomCode;
+        appState.game.phase = message.lobby.phase;
+        message.lobby.players.forEach(player => {
+           appState.game.playersById[player.playerId] = player;
+        });
+        // appState.game.playersById;
+        // appState.chips = message.player.chips;
+        appState.session.connected = true;
 
         showLobby();
         });
@@ -87,7 +94,7 @@ function showMenu() {
 }
 
 function showLobby() {
-  console.log('Next: mount the lobby view', appState.roomCode);
+  console.log('Next: mount the lobby view', appState.session.roomCode);
     activeView?.unmount();
 
     activeView = mountLobbyView({
@@ -115,7 +122,7 @@ function showLobby() {
 }
 
 function showGameplay() {
-    console.log('Next: mount the gameplay view', appState.roomCode);
+    console.log('Next: mount the gameplay view', appState.session.roomCode);
     activeView?.unmount();
 
     activeView = mountGameplayView({

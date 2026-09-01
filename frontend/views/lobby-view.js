@@ -6,18 +6,23 @@ export function mountLobbyView({
   onStartGame
 }) {
   const controller = new AbortController();
-
+  console.log(appState.game.playerIds);
   root.innerHTML = `
     <h1>AR Poker Counter</h1>
-    <div id="lobbyInfo">Room Code: ${appState.roomCode || '--'}</div>
+    <div id="lobbyInfo">Room Code: ${appState.session.roomCode || '--'}</div>
     <ul id="playerList">
         <p>Players in lobby:</p>
-        ${appState.players.map(p => `<li>${p.playerName} - Chips: ${p.chips}</li>`).join('')}
+        ${appState.game.playerIds.map(playerId => {
+            const p = appState.game.playersById[playerId];
+            return `<li${playerId === appState.session.playerId ? ` class="current-player"` : ``}>
+                ${p.playerName} - Chips: ${p.chips}
+            </li>`
+        }).join('')}
     </ul>
     <div class="hud">
         <div id="status">Joined lobby!</div>
-        <div id="chipCount">Chips: ${appState.chips || '--'}</div>
-        <button id="startGameBtn"${appState.isHost ? `` : ` style="display: none;"`}>Start Game</button>
+        <div id="chipCount">Chips: ${appState.session.chips || '--'}</div>
+        <button id="startGameBtn"${appState.session.isHost ? `` : ` style="display: none;"`}>Start Game</button>
         <div>Test</div>
     </div>
     `;
@@ -29,8 +34,8 @@ export function mountLobbyView({
   const startGameBtn = document.getElementById('startGameBtn');
 
   startGameBtn.addEventListener('click', () => {
-    if (appState.isHost) {
-        onStartGame({ roomCode: appState.roomCode });
+    if (appState.session.isHost) {
+        onStartGame({ roomCode: appState.session.roomCode });
     }
   })
 

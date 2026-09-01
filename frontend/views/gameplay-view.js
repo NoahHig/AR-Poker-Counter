@@ -24,8 +24,8 @@ export function mountGameplayView({
         <button id="raiseBtn">Raise</button>
         <button id="foldBtn">Fold</button>
         <button id="checkBtn">Check</button>
-        <div id="status">Not connected</div>
-        <div id="chipCount">Chips: --</div>
+        <div id="status">Connected</div>
+        <div id="chipCount">Chips: ${ appState.chips }</div>
     </div>
   `;
   const quantityInput = document.getElementById('quantityInput');
@@ -73,10 +73,16 @@ export function mountGameplayView({
   window.addEventListener(
     'chip-update',
     (event) => {
-        appState.chips = event.detail.chips;
-        document.querySelector('#chipCount').textContent = `Chips: ${event.detail.chips}`;
-        document.querySelector('#markerText').setAttribute('value', `Chips: ${event.detail.chips}`);
-    })
+        // appState.chipsByPlayerId = appState.chipsByPlayerId || {};
+        const players = event.detail.lobby.players;
+        players.forEach(p => {
+            appState.game.playersById[p.playerId] = p;
+        })
+        // appState.game.playersById = event.detail.playersById;
+        appState.session.chips = appState.game.playersById[appState.playerId].chips;
+        document.querySelector('#chipCount').textContent = `Chips: ${appState.session.chips}`;
+        document.querySelector('#markerText').setAttribute('value', `Chips: ${appState.session.chips}`);
+    });
 
 //   socket.on('chip-update', (payload) => {
 //     appState.chips = payload.chips;
