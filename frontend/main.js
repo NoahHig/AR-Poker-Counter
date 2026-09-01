@@ -62,7 +62,11 @@ function showMenu() {
         // appState.chips = message.player.chips;
         appState.session.connected = true;
 
-        showLobby();
+        if (appState.game.phase === 'playing') {
+            showGameplay();
+        } else {
+            showLobby();
+        }
         });
     //   return new Promise((resolve, reject) => {
     //     socket.timeout(5000).emit(
@@ -128,10 +132,42 @@ function showGameplay() {
     activeView = mountGameplayView({
         root,
 
-        onAction: ({ action, roomCode, amount, playerName }) => {
-            console.log(`Player ${playerName} performed action: ${action} with amount: ${amount}`);
+        onAction: ({ action, roomCode, amount, playerId }) => {
+          console.log(`Player ${appState.game.playersById[playerId].playerName} performed action: ${action} with amount: ${amount}`);
+          return new Promise((resolve, reject) => {
+          socket.timeout(5000).emit(
+            'action',
+            { action: action, roomCode: roomCode, amount: amount, playerId: playerId },
+            (error, response) => {
+              if (error) {
+                reject(new Error('The server did not respond.'));
+                return;
+              }
+
+              return;
+            }
+          )})
         }
     });
 }
+
+window.addEventListener(
+    'start-hand',
+    (event) => {
+        const lobby = event.detail.lobby;
+        appState.game.phase = lobby.phase;
+        appState.game.round = lobby.round;
+        appState.game.pot = lobby.pot,
+        appState.game.bet = lobby.bet,
+        appState.game.turn = lobby.turn,
+        appState.game.button = lobby.button,
+        appState.game.lastRaised = lobby.lastRaised
+        if (appState.game.phase === 'playing') {
+            showGameplay();
+        } else {
+            showLobby();
+        }
+    }
+)
 
 showMenu();

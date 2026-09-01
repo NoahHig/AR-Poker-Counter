@@ -25,7 +25,7 @@ export function mountGameplayView({
         <button id="foldBtn">Fold</button>
         <button id="checkBtn">Check</button>
         <div id="status">Connected</div>
-        <div id="chipCount">Chips: ${ appState.chips }</div>
+        <div id="chipCount">Chips: ${ appState.game.playersById[appState.session.playerId].chips }</div>
     </div>
   `;
   const quantityInput = document.getElementById('quantityInput');
@@ -43,7 +43,7 @@ export function mountGameplayView({
   raiseBtn.addEventListener('click', () => {
     // Implement raise logic here
     const quantity = parseInt(quantityInput.value, 10) || 0;
-    onAction({ action: 'raise', roomCode: appState.roomCode, amount: quantity, playerName: appState.playerName });
+    onAction({ action: 'raise', roomCode: appState.session.roomCode, amount: quantity, playerId: appState.session.playerId });
     // socket.emit('raise', {
     //   roomCode: appState.roomCode,
     //   amount: 10
@@ -53,7 +53,7 @@ export function mountGameplayView({
 
   foldBtn.addEventListener('click', () => {
     // Implement fold logic here
-    onAction({ action: 'fold', roomCode: appState.roomCode, amount: 0, playerName: appState.playerName });
+    onAction({ action: 'fold', roomCode: appState.session.roomCode, amount: 0, playerId: appState.session.playerId });
     // socket.emit('fold', {
     //   roomCode: appState.roomCode
     // });
@@ -63,7 +63,7 @@ export function mountGameplayView({
   checkBtn.addEventListener('click', () => {
     // Implement check logic here
     const quantity = parseInt(quantityInput.value, 10) || 0
-    onAction({ action: 'check', roomCode: appState.roomCode, amount: 0, playerName: appState.playerName });
+    onAction({ action: 'check', roomCode: appState.session.roomCode, amount: 0, playerid: appState.session.playerId });
     // socket.emit('check', {
     //   roomCode: appState.roomCode
     // });
@@ -83,6 +83,13 @@ export function mountGameplayView({
         document.querySelector('#chipCount').textContent = `Chips: ${appState.session.chips}`;
         document.querySelector('#markerText').setAttribute('value', `Chips: ${appState.session.chips}`);
     });
+
+    window.addEventListener(
+        'message',
+        (event) => {
+            statusEl.textContent = event.detail.message;
+        }
+    )
 
 //   socket.on('chip-update', (payload) => {
 //     appState.chips = payload.chips;

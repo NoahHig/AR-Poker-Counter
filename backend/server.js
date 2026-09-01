@@ -321,17 +321,26 @@ io.on('connection', (socket) => {
     startHand(lobby);
     io.to(roomCode).emit('start-hand', {
       lobby: makeLobbySnapshot(roomCode),
-      players: lobby.playerIds.map(playerId => lobby.playersById[playerId]),
-      playerIds: lobby.playerIds,
-      round: lobby.round,
-      pot: lobby.pot,
-      bet: lobby.bet,
-      turn: lobby.turn,
-      button: lobby.button,
-      lastRaised: lobby.lastRaised
+      // players: lobby.playerIds.map(playerId => lobby.playersById[playerId]),
+      // playerIds: lobby.playerIds,
+      // round: lobby.round,
+      // pot: lobby.pot,
+      // bet: lobby.bet,
+      // turn: lobby.turn,
+      // button: lobby.button,
+      // lastRaised: lobby.lastRaised
     });
     if(callback) callback({ success: true });
-  })
+  });
+
+  socket.on('action', ({ action, roomCode, amount, playerId }, callback) => {
+    const lobby = lobbies.get(roomCode);
+    if (!lobby) return;
+    io.to(roomCode).emit('message', {
+      message: `${lobby.playersById[playerId].playerName} performed ${action} with amount: ${amount}`
+    });
+    if(callback) callback({ success: true });
+  });
 });
 
 app.get('/', (_req, res) => {

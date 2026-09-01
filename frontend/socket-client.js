@@ -112,6 +112,14 @@ socket.on('connection', () => {
   // statusEl.textContent = 'Socket connected';
 });
 
+socket.on('message', (payload) => {
+  window.dispatchEvent(
+    new CustomEvent('message', {
+      detail: payload
+    })
+  )
+})
+
 socket.on('joined-lobby', (payload) => {
   window.dispatchEvent(
     new CustomEvent('joined-lobby', {
@@ -124,6 +132,14 @@ socket.on('joined-lobby', (payload) => {
 socket.on('chip-update', (payload) => {
   window.dispatchEvent(
     new CustomEvent('chip-update', {
+      detail: payload
+    })
+  )
+})
+
+socket.on('start-hand', (payload) => {
+  window.dispatchEvent(
+    new CustomEvent('start-hand', {
       detail: payload
     })
   )
