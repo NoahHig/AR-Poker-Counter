@@ -18,21 +18,44 @@ export function mountGameplayView({
         <a-entity camera></a-entity>
     </a-scene>
 
+    <div class="game">
+        <p id="turnLabel">Turn: </p>
+        <p id="roundLabel">Round: </p>
+        <p id="betLabel">Bet: </p>
+        <p id="potLabel">Pot: </p>
+        <ul id="playerList">
+            <p>Players:</p>
+            ${appState.game.playerIds.map(playerId => {
+                const p = appState.game.playersById[playerId];
+                return `<li${playerId === appState.session.playerId ? ` class="current-player"` : ``}>
+                    ${p.playerName} - Chips: ${p.chips}
+                </li>`
+            }).join('')}
+        </ul>
+    </div
+
     <div class="hud">
         <input id="quantityInput" placeholder="Quantity" type="number">
         <button id="addChipsBtn">+10 chips</button>
         <button id="raiseBtn">Raise</button>
         <button id="foldBtn">Fold</button>
-        <button id="checkBtn">Check</button>
+        <button id="callBtn">Call</button>
         <div id="status">Connected</div>
         <div id="chipCount">Chips: ${ appState.game.playersById[appState.session.playerId].chips }</div>
     </div>
   `;
+
+  const turnLabel = document.getElementById('turnLabel');
+  const roundLabel = document.getElementById('roundLabel');
+  const betLabel = document.getElementById('betLabel');
+  const potLabel = document.getElementById('potLabel');
+  const playerList = document.getElementById('playerList');
+  
   const quantityInput = document.getElementById('quantityInput');
   const addChipsBtn = document.getElementById('addChipsBtn');
   const raiseBtn = document.getElementById('raiseBtn');
   const foldBtn = document.getElementById('foldBtn');
-  const checkBtn = document.getElementById('checkBtn');
+  const callBtn = document.getElementById('callBtn');
   const statusEl = document.getElementById('status');
 
   addChipsBtn.addEventListener('click', () => {
@@ -60,36 +83,44 @@ export function mountGameplayView({
     console.log('Fold button clicked');
   });
 
-  checkBtn.addEventListener('click', () => {
-    // Implement check logic here
+  callBtn.addEventListener('click', () => {
+    // Implement call logic here
     const quantity = parseInt(quantityInput.value, 10) || 0
-    onAction({ action: 'check', roomCode: appState.session.roomCode, amount: 0, playerid: appState.session.playerId });
-    // socket.emit('check', {
+    onAction({ action: 'call', roomCode: appState.session.roomCode, amount: 0, playerId: appState.session.playerId });
+    // socket.emit('call', {
     //   roomCode: appState.roomCode
     // });
-    console.log('Check button clicked');
+    console.log('Call button clicked');
   });
 
   window.addEventListener(
-    'chip-update',
+    'update-screen',
     (event) => {
         // appState.chipsByPlayerId = appState.chipsByPlayerId || {};
-        const players = event.detail.lobby.players;
-        players.forEach(p => {
-            appState.game.playersById[p.playerId] = p;
-        })
         // appState.game.playersById = event.detail.playersById;
-        appState.session.chips = appState.game.playersById[appState.playerId].chips;
-        document.querySelector('#chipCount').textContent = `Chips: ${appState.session.chips}`;
-        document.querySelector('#markerText').setAttribute('value', `Chips: ${appState.session.chips}`);
+        // appState.session.chips = appState.game.playersById[appState.playerId].chips;
+        document.querySelector('#chipCount').textContent = `Chips: ${appState.game.playersById[appState.session.playerId].chips}`;
+        // document.querySelector('#markerText').setAttribute('value', `Chips: ${appState.game.playersById[appState.session.playerId].chips}`);
+
+        turnLabel.textContent = `Turn: ${appState.game.playersById[appState.game.playerIds[appState.game.turn]].playerName}`;
+        // turnLabel.textContent = `Turn: ${appState.game.turn}`;
+        roundLabel.textContent = `Round: ${appState.game.round}`;
+        betLabel.textContent = `Bet: ${appState.game.bet}`;
+        potLabel.textContent = `Pot: ${appState.game.pot}`;
+        playerList.innerHTML = `<p>Players:</p>
+        ${appState.game.playerIds.map(playerId => {
+            const p = appState.game.playersById[playerId];
+            return `<li${playerId === appState.session.playerId ? ` class="current-player"` : ``}>
+                ${appState.game.playerIds.indexOf[playerId] === appState.game.turn ? '>' : ''}${p.playerName} - Chips: ${p.chips}
+            </li>`
+        }).join('')}`;
     });
 
     window.addEventListener(
         'message',
         (event) => {
             statusEl.textContent = event.detail.message;
-        }
-    )
+        });
 
 //   socket.on('chip-update', (payload) => {
 //     appState.chips = payload.chips;

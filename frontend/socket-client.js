@@ -122,16 +122,23 @@ socket.on('message', (payload) => {
 
 socket.on('joined-lobby', (payload) => {
   window.dispatchEvent(
-    new CustomEvent('joined-lobby', {
+    new CustomEvent('update-values', {
       detail: payload
+    })
+  )
+  window.dispatchEvent(
+    new CustomEvent('message', {
+      detail: {
+        message: `${payload.playerName} has joined the lobby!`
+      }
     })
   )
   // statusEl.textContent = `${payload.playerName} has joined the lobby!`;
 });
 
-socket.on('chip-update', (payload) => {
+socket.on('update', (payload) => {
   window.dispatchEvent(
-    new CustomEvent('chip-update', {
+    new CustomEvent('update-values', {
       detail: payload
     })
   )

@@ -152,6 +152,29 @@ function showGameplay() {
 }
 
 window.addEventListener(
+    'update-values',
+    (event) => {
+        appState.game.phase = event.detail.lobby.phase;
+        appState.game.playerIds = event.detail.lobby.playerIds;
+        const players = event.detail.lobby.players;
+        players.forEach(p => {
+            appState.game.playersById[p.playerId] = p;
+        })
+        appState.game.round = event.detail.lobby.round;
+        appState.game.pot = event.detail.lobby.pot;
+        appState.game.bet = event.detail.lobby.bet;
+        appState.game.turn = event.detail.lobby.turn;
+        appState.game.button = event.detail.lobby.button;
+        appState.game.lastRaised = event.detail.lobby.lastRaised;
+        window.dispatchEvent(
+            new CustomEvent('update-screen', {
+                detail: event.detail
+            })
+        )
+    }
+)
+
+window.addEventListener(
     'start-hand',
     (event) => {
         const lobby = event.detail.lobby;

@@ -66,7 +66,8 @@ function createLobby(roomCode, playerName) {
     bet: 0,
     turn: 0,
     button: 0,
-    lastRaised: 0
+    lastRaised: 0,
+    lastRaisedRound: 0
   };
 
   console.log(`Creating lobby with code: ${lobby.roomCode} and host player: ${playerName}`);
@@ -146,15 +147,22 @@ function startHand(lobby) {
   lobby.bet = 0;
   lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
   lobby.lastRaised = lobby.turn;
+  lobby.lastRaisedRound = lobby.turn;
 }
 
 function nextRound(lobby) {
   lobby.round++;
   lobby.bet = 0;
-  lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
-  lobby.lastRaised = lobby.turn;
+  // lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
+  lobby.lastRaisedRound = lobby.button;
+  lobby.turn = lobby.button;
+  nextTurn(lobby);
+  lobby.lastRaisedRound = lobby.turn;
   if (lobby.round > 4) {
     const winnerId = determineWinner(lobby);
+    io.to(lobby.roomCode).emit('message', {
+      message: `Game ended, winner: ${lobby.playersById[winnerId]}`
+    });
     endHand(lobby, winnerId);
   }
 }
@@ -179,6 +187,7 @@ function endHand(lobby, playerId) {
   lobby.bet = 0;
   lobby.turn = 0;
   lobby.lastRaised = 0;
+  lobby.lastRaisedRound = 0;
   lobby.playerIds.forEach(playerId => {
     const p = lobby.playersById[playerId];
     p.bet = 0;
@@ -186,6 +195,11 @@ function endHand(lobby, playerId) {
     p.allIn = false;
   });
   lobby.button = (lobby.button + 1) % lobby.playerIds.length;
+  io.to(lobby.roomCode).emit('update', {
+    lobby: makeLobbySnapshot(lobby.roomCode),
+    playerName: player.playerName,
+    chips: player.chips
+  });
 }
 
 function fold(lobby, playerId) {
@@ -209,12 +223,24 @@ function raise(lobby, playerId, amount) {
   player.bet = lobby.bet;
   player.chips -= contribution;
   lobby.pot += contribution;
-  lobby.lastRaised = lobby.turn;
+  if (amount > 0) {
+    lobby.lastRaised = lobby.turn;
+    lobby.lastRaisedRound = lobby.turn;
+  }
   return true;
 }
 
 function call(lobby, playerId) {
   return raise(lobby, playerId, 0);
+}
+
+function nextTurn(lobby) {
+  lobby.turn = (lobby.turn + 1) % lobby.playerIds.length;
+  if (lobby.turn == lobby.lastRaisedRound) {
+    nextRound(lobby);
+  } else if (lobby.playersById[lobby.playerIds[lobby.turn]].folded || lobby.playersById[lobby.playerIds[lobby.turn]].allIn) {
+    nextTurn(lobby);
+  }
 }
 
 function allIn(lobby, playerId) {
@@ -224,40 +250,41 @@ function allIn(lobby, playerId) {
   const contribution = player.chips;
   if (player.bet + contribution > lobby.bet) {
     lobby.bet = player.bet + contribution;
+    lobby.lastRaised = lobby.turn;
+    lobby.lastRaisedRound = lobby.turn;
   }
   lobby.pot += contribution;
   player.bet += contribution;
   player.chips = 0;
   player.allIn = true;
-  lobby.lastRaised = lobby.turn;
   return true;
 }
 
-function runGameLoop() {
-  while (lobby.round < 4) {
-    const currentPlayer = lobby.playersById[lobby.playerIds[lobby.turn]];
-    if (currentPlayer.folded || currentPlayer.allIn) {
-      lobby.turn = (lobby.turn + 1) % lobby.playerIds.length;
-      continue;
-    }
+// function runGameLoop() {
+//   while (lobby.round < 4) {
+//     const currentPlayer = lobby.playersById[lobby.playerIds[lobby.turn]];
+//     if (currentPlayer.folded || currentPlayer.allIn) {
+//       lobby.turn = (lobby.turn + 1) % lobby.playerIds.length;
+//       continue;
+//     }
 
-    // Wait for player action (fold, call, raise, all-in)
-    // This would typically be handled via socket events in a real implementation
+//     // Wait for player action (fold, call, raise, all-in)
+//     // This would typically be handled via socket events in a real implementation
 
-    // For demonstration, we'll just move to the next player
-    lobby.turn = (lobby.turn + 1) % lobby.playerIds.length;
+//     // For demonstration, we'll just move to the next player
+//     lobby.turn = (lobby.turn + 1) % lobby.playerIds.length;
 
-    if (lobby.turn === lobby.lastRaised) {
-      nextRound(lobby);
-    }
+//     if (lobby.turn === lobby.lastRaised) {
+//       nextRound(lobby);
+//     }
 
-    // Check if all players have acted and if the round should end
-    const activePlayers = lobby.playerIds.map(playerId => lobby.playersById[playerId]).filter(p => !p.folded && !p.allIn);
-    if (activePlayers.length <= 1) {
-      break; // End the round if only one player is left
-    }
-  }
-}
+//     // Check if all players have acted and if the round should end
+//     const activePlayers = lobby.playerIds.map(playerId => lobby.playersById[playerId]).filter(p => !p.folded && !p.allIn);
+//     if (activePlayers.length <= 1) {
+//       break; // End the round if only one player is left
+//     }
+//   }
+// }
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -276,7 +303,7 @@ io.on('connection', (socket) => {
     if (result.lobby) {
       socket.join(roomCode);
       socket.broadcast.to(roomCode).emit('joined-lobby', {
-        roomCode: result.lobby.roomCode,
+        lobby: makeLobbySnapshot(result.lobby.roomCode),
         playerName: result.player.playerName,
         chips: result.player.chips
       });
@@ -295,7 +322,7 @@ io.on('connection', (socket) => {
     if (!player) return;
 
     player.chips += amount;
-    io.to(roomCode).emit('chip-update', {
+    io.to(roomCode).emit('update', {
       lobby: makeLobbySnapshot(roomCode),
       playerName: player.playerName,
       chips: player.chips
@@ -335,9 +362,36 @@ io.on('connection', (socket) => {
 
   socket.on('action', ({ action, roomCode, amount, playerId }, callback) => {
     const lobby = lobbies.get(roomCode);
-    if (!lobby) return;
+    if (!lobby) {
+      console.log("Lobby not found");
+      if(callback) callback({ success: false });
+      return;
+    }
+
+    const player = lobby.playersById[playerId];
+    if (!player || lobby.turn != lobby.playerIds.indexOf(playerId)) {
+      console.log("Not player's turn");
+      if(callback) callback({ success: false });
+      return;
+    }
+    
+    if (action === 'raise') {
+      raise(lobby, playerId, amount);
+      nextTurn(lobby);
+    } else if (action === 'fold') {
+      fold(lobby, playerId);
+      nextTurn(lobby);
+    } else if (action === 'call') {
+      call(lobby, playerId);
+      nextTurn(lobby);
+    }
     io.to(roomCode).emit('message', {
       message: `${lobby.playersById[playerId].playerName} performed ${action} with amount: ${amount}`
+    });
+    io.to(roomCode).emit('update', {
+      lobby: makeLobbySnapshot(roomCode),
+      playerName: player.playerName,
+      chips: player.chips
     });
     if(callback) callback({ success: true });
   });
