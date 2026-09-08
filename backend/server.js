@@ -152,7 +152,6 @@ function startHand(lobby) {
 
 function nextRound(lobby) {
   lobby.round++;
-  lobby.bet = 0;
   // lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
   lobby.lastRaisedRound = lobby.button;
   lobby.turn = lobby.button;
@@ -170,7 +169,7 @@ function nextRound(lobby) {
 function determineWinner(lobby) {
   const activePlayers = lobby.playerIds.map(playerId => lobby.playersById[playerId]).filter(p => !p.folded);
   if (activePlayers.length === 1) {
-    return activePlayers[0].playerName;
+    return activePlayers[0].playerId;
   }
   // Placeholder for hand evaluation logic
   return activePlayers[Math.floor(Math.random() * activePlayers.length)].playerId;
