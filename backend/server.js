@@ -151,18 +151,34 @@ function startHand(lobby) {
 }
 
 function nextRound(lobby) {
-  lobby.round++;
-  // lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
-  lobby.lastRaisedRound = lobby.button;
-  lobby.turn = lobby.button;
-  nextTurn(lobby);
-  lobby.lastRaisedRound = lobby.turn;
+  let numActivePlayers = 0;
+  lobby.playerIds.forEach(playerId => {
+    if (!lobby.playersById[playerId].folded) {
+      numActivePlayers++;
+    }
+  });
+  if (numActivePlayers > 1) {
+    lobby.round++;
+    // lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
+    lobby.lastRaisedRound = lobby.button;
+    lobby.turn = lobby.button;
+    nextTurn(lobby);
+    lobby.lastRaisedRound = lobby.turn;
+  } else {
+    const winnerId = lobby.playerIds.filter(playerId => !lobby.playersById[playerId].folded)[0];
+    io.to(lobby.roomCode).emit('message', {
+      message: `Game ended, winner: ${lobby.playersById[winnerId]}`
+    });
+    endHand(lobby, winnerId);
+    return;
+  }
   if (lobby.round > 4) {
     const winnerId = determineWinner(lobby);
     io.to(lobby.roomCode).emit('message', {
       message: `Game ended, winner: ${lobby.playersById[winnerId]}`
     });
     endHand(lobby, winnerId);
+    return;
   }
 }
 
@@ -181,19 +197,19 @@ function endHand(lobby, playerId) {
     player.chips += lobby.pot;
   }
 
-  lobby.round = 0;
+  lobby.round = 1;
   lobby.pot = 0;
   lobby.bet = 0;
-  lobby.turn = 0;
-  lobby.lastRaised = 0;
-  lobby.lastRaisedRound = 0;
+  lobby.button = (lobby.button + 1) % lobby.playerIds.length;
+  lobby.turn = (lobby.button + 1) % lobby.playerIds.length;
+  lobby.lastRaised = lobby.turn;
+  lobby.lastRaisedRound = lobby.turn;
   lobby.playerIds.forEach(playerId => {
     const p = lobby.playersById[playerId];
     p.bet = 0;
     p.folded = false;
     p.allIn = false;
   });
-  lobby.button = (lobby.button + 1) % lobby.playerIds.length;
   io.to(lobby.roomCode).emit('update', {
     lobby: makeLobbySnapshot(lobby.roomCode),
     playerName: player.playerName,
