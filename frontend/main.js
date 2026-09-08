@@ -144,7 +144,12 @@ function showGameplay() {
                 return;
               }
 
-              return;
+              if (!response?.success) {
+                reject(new Error(response?.message || 'Action was rejected'));
+                return;
+              }
+
+              resolve(response);
             }
           )})
         }
@@ -166,11 +171,16 @@ window.addEventListener(
         appState.game.turn = event.detail.lobby.turn;
         appState.game.button = event.detail.lobby.button;
         appState.game.lastRaised = event.detail.lobby.lastRaised;
-        window.dispatchEvent(
-            new CustomEvent('update-screen', {
-                detail: event.detail
-            })
-        )
+        if (appState.game.phase === 'lobby') {
+            showLobby();
+        } else if (appState.game.phase === 'playing') {
+            showGameplay();
+        }
+        // window.dispatchEvent(
+        //     new CustomEvent('update-screen', {
+        //         detail: event.detail
+        //     })
+        // )
     }
 )
 

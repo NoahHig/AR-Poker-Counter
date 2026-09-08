@@ -363,14 +363,14 @@ io.on('connection', (socket) => {
     const lobby = lobbies.get(roomCode);
     if (!lobby) {
       console.log("Lobby not found");
-      if(callback) callback({ success: false });
+      if(callback) callback({ success: false, message: "Lobby not found" });
       return;
     }
 
     const player = lobby.playersById[playerId];
     if (!player || lobby.turn != lobby.playerIds.indexOf(playerId)) {
       console.log("Not player's turn");
-      if(callback) callback({ success: false });
+      if(callback) callback({ success: false, message: "Not player's turn" });
       return;
     }
     
@@ -392,7 +392,8 @@ io.on('connection', (socket) => {
       playerName: player.playerName,
       chips: player.chips
     });
-    if(callback) callback({ success: true });
+    if (callback) callback({ success: true });
+    return;
   });
 });
 

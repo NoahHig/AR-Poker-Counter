@@ -1,4 +1,406 @@
-html, body {
+:root {
+  --text: #f4fff8;
+  --muted: #b9d1c0;
+  --panel: rgba(4, 15, 10, 0.78);
+  --panel-strong: rgba(5, 22, 14, 0.92);
+  --line: rgba(225, 255, 235, 0.2);
+  --green: #62dc93;
+  --green-strong: #9bf2bd;
+  --gold: #ffcf61;
+  --danger: #ff7880;
+  --shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: #020604;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+  These two overlay layers remain above the A-Frame camera scene.
+  "pointer-events: none" prevents a large transparent panel from blocking
+  AR interactions; individual controls restore pointer events below.
+*/
+.info,
+.hud {
+  position: fixed;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.info {
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  left: 12px;
+  max-height: min(64vh, 610px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(17, 61, 37, 0.72), rgba(3, 15, 9, 0.84)),
+    var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: auto;
+}
+
+.hud {
+  right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 12px;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.horizontal {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Generic headings and text within your overlay panels */
+.info h1,
+.info h2,
+.info h3,
+.hud h1,
+.hud h2,
+.hud h3 {
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.info h1 {
+  font-size: clamp(1.35rem, 5vw, 2rem);
+}
+
+.info h2 {
+  font-size: 1.1rem;
+}
+
+.info p,
+.hud p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+/* Inputs */
+input,
+select {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.38);
+}
+
+input::placeholder {
+  color: rgba(217, 241, 225, 0.48);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255, 207, 97, 0.17);
+}
+
+/* Buttons */
+button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 207, 97, 0.75);
+  border-radius: 10px;
+  color: #182617;
+  background: var(--gold);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    opacity 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+button.secondary {
+  border-color: var(--line);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+button.danger {
+  border-color: rgba(255, 120, 128, 0.72);
+  color: #fff;
+  background: rgba(164, 43, 53, 0.9);
+}
+
+/*
+  Add this class to the active poker player.
+  It replaces the existing green text-only treatment with a visible
+  highlighted seat/card.
+*/
+.current-player {
+  border-color: rgba(255, 207, 97, 0.95) !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 207, 97, 0.2),
+    0 8px 22px rgba(0, 0, 0, 0.25) !important;
+}
+
+/*
+  Optional reusable classes for markup in your three views.
+*/
+.card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.value {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.chip-value {
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.status::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(98, 220, 147, 0.14);
+  content: "";
+}
+
+.player-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.player-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #0a2113;
+  background: var(--green-strong);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.player-detail {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.player-chips {
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/*
+  Compact game information bar for the bottom HUD.
+*/
+.game-hud {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.game-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat-pill {
+  min-width: 76px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.stat-pill .label {
+  font-size: 0.6rem;
+}
+
+.stat-pill .value {
+  font-size: 0.9rem;
+}
+
+.action-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.raise-input {
+  width: 78px;
+  min-height: 44px;
+}
+
+@media (max-width: 620px) {
+  .info {
+    right: 8px;
+    left: 8px;
+    max-height: 59vh;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .hud {
+    right: 8px;
+    left: 8px;
+  }
+
+  .game-hud {
+    grid-template-columns: 1fr;
+  }
+
+  .action-controls {
+    justify-content: stretch;
+  }
+
+  .action-controls button {
+    flex: 1 1 calc(33.33% - 8px);
+  }
+
+  .raise-input {
+    flex: 1 1 80px;
+  }
+
+  .player-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+
+  .player-avatar {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* html, body {
     font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
     color: white;
     font-size: 24px;
@@ -57,4 +459,4 @@ button {
 .current-player {
     color: green;
     font-weight: 700;
-}
+} */
