@@ -10,11 +10,11 @@ export function mountMenuView({
     root.innerHTML = `
     <section class="info stack">
         <div>
-        <span class="status">AR poker lobby</span>
-        <h1>AR Poker Counter</h1>
-        <p>
-            Create a private table for your group, or enter a room code to join one.
-        </p>
+            <span class="status">AR poker lobby</span>
+            <h1>AR Poker Counter</h1>
+            <p>
+                Create a private table for your group, or enter a room code to join one.
+            </p>
         </div>
 
         <form id="create-lobby-form" class="card stack">
@@ -95,7 +95,15 @@ export function mountMenuView({
   createLobbyForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const roomCode = "1234";
+    let roomCode = "";
+    for (let i = 0; i < 6; i++) {
+        const digit = Math.floor(Math.random() * 36);
+        if (digit < 10) {
+            roomCode += String(digit);
+        } else {
+            roomCode += String.fromCharCode(digit + 55);
+        }
+    }
     const playerName = createPlayerName.value.trim() || 'Player';
     onJoinLobby({ playerName, roomCode });
   }, { signal: controller.signal });
