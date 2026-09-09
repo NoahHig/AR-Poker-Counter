@@ -58,8 +58,6 @@ function showMenu() {
         message.lobby.players.forEach(player => {
            appState.game.playersById[player.playerId] = player;
         });
-        // appState.game.playersById;
-        // appState.chips = message.player.chips;
         appState.session.connected = true;
 
         if (appState.game.phase === 'playing') {
@@ -68,31 +66,6 @@ function showMenu() {
             showLobby();
         }
         });
-    //   return new Promise((resolve, reject) => {
-    //     socket.timeout(5000).emit(
-    //       'join-lobby',
-    //       { playerName, roomCode },
-    //       (error, response) => {
-    //         if (error) {
-    //           reject(new Error('Could not reach the lobby server.'));
-    //           return;
-    //         }
-
-    //         if (!response.ok) {
-    //           reject(new Error(response.message));
-    //           return;
-    //         }
-
-    //         appState.playerId = response.playerId;
-    //         appState.playerName = response.playerName;
-    //         appState.roomCode = response.roomCode;
-    //         appState.players = response.players;
-
-    //         showLobby();
-    //         resolve();
-    //       }
-    //     );
-    //   });
     }
   });
 }

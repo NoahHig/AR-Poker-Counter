@@ -7,9 +7,21 @@ const crypto = require('node:crypto');
 const app = express();
 const server = http.createServer(app);
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'ar-poker-backend'
+  });
+});
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5500',
+      'http://127.0.0.1:5500',
+      'https://NoahHig.github.io'
+    ],
     methods: ["GET", "POST"]
   }
 });
@@ -417,6 +429,8 @@ app.get('/', (_req, res) => {
   res.send('AR Poker backend running');
 });
 
-server.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+const PORT = Number(process.env.PORT || 3000)
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
