@@ -7,7 +7,7 @@ if (typeof io === 'undefined') {
 
 const LOCAL_SOCKET_URL = 'http://localhost:3000';
 // Replace once Render service has been created
-const PRODUCTION_SOCKET_URL = 'https://YOUR-RENDER-SERVICE.onrender.com';
+const PRODUCTION_SOCKET_URL = 'https://ar-poker-counter.onrender.com/';
 
 const socketUrl =
   window.location.hostname === 'localhost' ||
