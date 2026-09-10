@@ -132,7 +132,9 @@ export function mountGameplayView({
                 ${
                     appState.game.bet === 0
                     ? 'Check'
-                    : `Call ${appState.game.bet ?? 0}`
+                    : appState.game.bet - appState.game.playersById[appState.session.playerId].bet <= appState.game.playersById[appState.session.playerId].chips
+                    ? `Call ${appState.game.bet ?? 0}`
+                    : `All In ${appState.game.bet ?? 0}`
                 }
             </button>
 

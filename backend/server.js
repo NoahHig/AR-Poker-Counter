@@ -261,6 +261,9 @@ function raise(lobby, playerId, amount) {
 }
 
 function call(lobby, playerId) {
+  if (lobby.bet - lobby.playersById[playerId].bet > lobby.playersById[playerId].chips) {
+    return allIn(lobby, playerId);
+  }
   return raise(lobby, playerId, 0);
 }
 
@@ -403,23 +406,24 @@ io.on('connection', (socket) => {
       return;
     }
     
+    let success = false;
     if (action === 'raise') {
-      raise(lobby, playerId, amount);
-      nextTurn(lobby);
+      success = raise(lobby, playerId, amount);
     } else if (action === 'fold') {
-      fold(lobby, playerId);
-      nextTurn(lobby);
+      success = fold(lobby, playerId);
     } else if (action === 'call') {
-      call(lobby, playerId);
-      nextTurn(lobby);
+      success = call(lobby, playerId);
     }
-    io.to(roomCode).emit('message', {
-      message: `${lobby.playersById[playerId].playerName} performed ${action} with amount: ${amount}`
-    });
-    io.to(roomCode).emit('update', {
-      lobby: makeLobbySnapshot(roomCode)
-    });
-    if (callback) callback({ success: true });
+    if (success) {
+      nextTurn(lobby);
+      io.to(roomCode).emit('message', {
+        message: `${lobby.playersById[playerId].playerName} performed ${action} with amount: ${amount}`
+      });
+      io.to(roomCode).emit('update', {
+        lobby: makeLobbySnapshot(roomCode)
+      });
+    }
+    if (callback) callback({ success: success });
     return;
   });
 
