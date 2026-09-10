@@ -185,11 +185,15 @@ function nextRound(lobby) {
     return;
   }
   if (lobby.round > 4) {
-    const winnerId = determineWinner(lobby);
-    io.to(lobby.roomCode).emit('message', {
-      message: `Game ended, winner: ${lobby.playersById[winnerId]}`
+    lobby.phase = 'finished';
+    io.to(lobby.roomCode).emit('update', {
+      lobby: makeLobbySnapshot(lobby.roomCode)
     });
-    endHand(lobby, winnerId);
+    // const winnerId = determineWinner(lobby);
+    // io.to(lobby.roomCode).emit('message', {
+    //   message: `Game ended, winner: ${lobby.playersById[winnerId]}`
+    // });
+    // endHand(lobby, winnerId);
     return;
   }
 }
@@ -209,6 +213,7 @@ function endHand(lobby, playerId) {
     player.chips += lobby.pot;
   }
 
+  lobby.phase = 'lobby';
   lobby.round = 1;
   lobby.pot = 0;
   lobby.bet = 0;
@@ -224,8 +229,6 @@ function endHand(lobby, playerId) {
   });
   io.to(lobby.roomCode).emit('update', {
     lobby: makeLobbySnapshot(lobby.roomCode),
-    playerName: player.playerName,
-    chips: player.chips
   });
 }
 
@@ -350,9 +353,7 @@ io.on('connection', (socket) => {
 
     player.chips += amount;
     io.to(roomCode).emit('update', {
-      lobby: makeLobbySnapshot(roomCode),
-      playerName: player.playerName,
-      chips: player.chips
+      lobby: makeLobbySnapshot(roomCode)
     });
   });
 
@@ -416,11 +417,29 @@ io.on('connection', (socket) => {
       message: `${lobby.playersById[playerId].playerName} performed ${action} with amount: ${amount}`
     });
     io.to(roomCode).emit('update', {
-      lobby: makeLobbySnapshot(roomCode),
-      playerName: player.playerName,
-      chips: player.chips
+      lobby: makeLobbySnapshot(roomCode)
     });
     if (callback) callback({ success: true });
+    return;
+  });
+
+  socket.on('select-winner', ({ roomCode, playerId }, callback) => {
+    const lobby = lobbies.get(roomCode);
+    if (!lobby) {
+      console.log("Lobby not found");
+      if(callback) callback({ success: false, message: "Lobby not found" });
+      return;
+    }
+
+    const player = lobby.playersById[playerId];
+    if (!player) {
+      console.log("Player not found");
+      if(callback) callback({ success: false, message: "Player not found" });
+      return;
+    }
+
+    endHand(lobby, playerId);
+    if(callback) callback({ success: true });
     return;
   });
 });

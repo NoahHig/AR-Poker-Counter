@@ -23,7 +23,7 @@ export function mountLobbyView({
             <span class="label">Private table</span>
             <h1>Waiting for players</h1>
             <p>
-            S   hare this room code. Players who join will appear below.
+                Share this room code. Players who join will appear below.
             </p>
         </div>
 

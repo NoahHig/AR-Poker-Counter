@@ -2,6 +2,7 @@ console.log('Mounting main.js');
 import { mountMenuView } from './views/menu-view.js';
 import { mountLobbyView } from './views/lobby-view.js';
 import { mountGameplayView } from './views/gameplay-view.js';
+import { mountGameEndView } from './views/game-end-view.js';
 import { socket } from './socket-client.js';
 import { appState } from './state.js';
 
@@ -129,6 +130,37 @@ function showGameplay() {
     });
 }
 
+function showGameEnd() {
+    console.log('Next: mount the game end view', appState.session.roomCode);
+    activeView?.unmount();
+
+    activeView = mountGameEndView({
+        root,
+
+        onSelectWinner: ({ roomCode, playerId }) => {
+            console.log("Winner selected");
+            return new Promise((resolve, reject) => {
+            socket.timeout(5000).emit(
+                'select-winner',
+                { roomCode: roomCode, playerId: playerId },
+                (error, response) => {
+                    if (error) {
+                        reject(new Error('The server did not respond.'));
+                        return;
+                    }
+
+                    if (!response?.success) {
+                        reject(new Error(response?.message || 'Action was rejected'));
+                        return;
+                    }
+
+                    resolve(response);
+                }
+            )})
+        }
+    });
+}
+
 window.addEventListener(
     'update-values',
     (event) => {
@@ -148,6 +180,8 @@ window.addEventListener(
             showLobby();
         } else if (appState.game.phase === 'playing') {
             showGameplay();
+        } else if (appState.game.phase === 'finished') {
+            showGameEnd();
         }
         // window.dispatchEvent(
         //     new CustomEvent('update-screen', {
@@ -170,7 +204,9 @@ window.addEventListener(
         appState.game.lastRaised = lobby.lastRaised
         if (appState.game.phase === 'playing') {
             showGameplay();
-        } else {
+        } else if (appState.game.phase === 'finished') {
+            showGameEnd();
+        } else if (appState.game.phase === 'lobby') {
             showLobby();
         }
     }
